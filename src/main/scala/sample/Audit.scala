@@ -1,37 +1,27 @@
 package sample
 
-import akka.actor.{Props, Actor}
+import akka.actor.TypedActor
 
-object AuditBus {
-  val name = "AuditBus"
-  def props = Props(new AuditBus)
+case class AuditEvent(auditCompanionCreated: Long, msg: Any)
 
-  case class AuditEvent(auditCompanionCreated: Long, msg: Any)
+trait AuditBus {
+  val name = "AuditBusImpl"
+
+  def auditMessage(event: AuditEvent) : Unit
 }
 
+class AuditBusImpl extends AuditBus {
 
-class AuditBus extends Actor {
-
-  def receive = {
-    case AuditBus.AuditEvent(companionCreated, msg) =>
-      println(s"[AuditBus:${self.hashCode()}] Message '$msg' received from '$sender'. AuditCompanion created at '$companionCreated'.")
+  def auditMessage(event: AuditEvent) : Unit = {
+    val msg = event.msg
+    val companionCreated = event.auditCompanionCreated
+    println("###Message " + msg + ", " + msg.getClass.getName)
+    println(s"[AuditBus:${TypedActor.self.hashCode()}] Message '$msg' received from '$TypedActor.sender'. " +
+      s"AuditCompanion created at '$companionCreated'.")
   }
+
+
 }
 
-
-object AuditCompanion {
-  val name = "AuditCompanion"
-  def props(implicit auditModule: AuditModule) = Props(new AuditCompanion)
-}
-
-
-class AuditCompanion(implicit auditModule: AuditModule) extends Actor {
-  val created = System.currentTimeMillis
-
-  val auditBus = auditModule.auditBus
-  def receive = {
-    case msg => auditBus forward AuditBus.AuditEvent(created, msg)
-  }
-}
 
 

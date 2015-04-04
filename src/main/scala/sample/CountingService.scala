@@ -1,7 +1,5 @@
 package sample
 
-import com.typesafe.config.Config
-
 import config.ConfigModule
 
 /**

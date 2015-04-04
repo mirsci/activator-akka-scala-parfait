@@ -1,7 +1,6 @@
 package sample
 
-import akka.actor.{ActorRef, Actor}
-import config.ConfigModule
+import akka.actor._
 
 /**
  * A config module for the counting actor and service.
@@ -9,17 +8,43 @@ import config.ConfigModule
  */
 
 trait CountingModule {
-  val countingActor: ActorRef
+  val counting: ICounting
+
   def countingService: CountingService
 }
 
 /**
  * A standard implementation configuration for CountingModule
  */
-trait StandardCountingModule extends CountingModule { this: SystemModule =>
+trait StandardCountingModule extends CountingModule {
+  this: SystemModule =>
 
-  lazy val countingActor: ActorRef =
-    actorSystem.actorOf(CountingActor.props(this), CountingActor.name)
+  lazy val counting: ICounting = newCounting(this)
+  lazy val countingImpl: CountingImpl = new CountingImpl()
 
-  def countingService: CountingService = new CountingService()(this)
+  def countingService: CountingService = newCountingService(this)
+
+  /**
+   * @arch factory
+   */
+  private def newCountingService(module: StandardCountingModule with SystemModule): CountingService = {
+    new CountingService()(module)
+  }
+
+  /**
+   * @arch factory
+   */
+  private def newCounting(module: StandardCountingModule with SystemModule): ICounting = {
+
+    TypedActor(actorSystem).typedActorOf(TypedProps[CountingImpl](classOf[ICounting], countingImpl))
+  }
+
+  def assemble(): Unit = {
+    /**
+     * Inject dependencies
+     */
+    countingImpl.countingService = this.countingService
+    countingImpl.auditBus = this.auditBus
+  }
+
 }

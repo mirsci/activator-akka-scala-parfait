@@ -1,14 +1,15 @@
 package sample
 
-import akka.actor.ActorRef
+import akka.actor.{TypedActor, TypedProps}
 import config.ConfigModule
 
 trait AuditModule {
-  def auditCompanion: ActorRef
-  def auditBus: ActorRef
+  def auditBus: AuditBus
 }
 
-trait StandardAuditModule extends AuditModule { this: ConfigModule =>
-  lazy val auditCompanion: ActorRef = actorSystem.actorOf(AuditCompanion.props(this), AuditCompanion.name)
-  lazy val auditBus: ActorRef = actorSystem.actorOf(AuditBus.props, AuditBus.name)
+trait StandardAuditModule extends AuditModule {
+  this: ConfigModule =>
+
+  lazy val auditBus: AuditBus = TypedActor(actorSystem).typedActorOf(TypedProps[AuditBusImpl]())
+
 }
